@@ -35,22 +35,43 @@ public:
     if (loops.empty())
       return;
 
+    auto moduleOp = funcOp->getParentOfType<ModuleOp>();
     unsigned numWarpGroups = 3;
     for (; numWarpGroups >= 2; numWarpGroups--) {
       // Partition key ops into multiple async tasks.
       doTaskPartition(funcOp, numWarpGroups);
+      if (dumpIntermediateSteps) {
+        llvm::dbgs()
+            << "// -----// WarpSpec internal IR Dump After: doTaskPartition\n"
+            << moduleOp << "\n\n\n";
+      }
       // Propagate taskId.
       int retCode = doTaskIdPropagate(funcOp);
       if (retCode == -1)
         continue;
+      if (dumpIntermediateSteps) {
+        llvm::dbgs()
+            << "// -----// WarpSpec internal IR Dump After: doTaskIdPropagate\n"
+            << moduleOp << "\n\n\n";
+      }
 
       // Partition ops into parallel sub ops.
       if (doDataPartition(funcOp, numWarpGroups - 1))
         break;
+      if (dumpIntermediateSteps) {
+        llvm::dbgs()
+            << "// -----// WarpSpec internal IR Dump After: doDataPartition\n"
+            << moduleOp << "\n\n\n";
+      }
       // Clear async_task.
     }
 
     doCodePartition(funcOp, numStages);
+    if (dumpIntermediateSteps) {
+      llvm::dbgs()
+          << "// -----// WarpSpec internal IR Dump After: doCodePartition\n"
+          << moduleOp << "\n\n\n";
+    }
     doTokenLowering(funcOp, numWarpGroups - 1);
   }
 
