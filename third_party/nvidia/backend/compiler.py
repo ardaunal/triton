@@ -258,10 +258,10 @@ class CUDABackend(BaseBackend):
             passes.ttir.add_triton_licm(pm)
             passes.common.add_canonicalizer(pm)
             passes.ttgpuir.add_combine_tensor_select_and_if(pm)
+            nvidia.passes.hopperws.add_hopper_warpspec(pm, opt.num_stages, dump_enabled)
             passes.ttgpuir.add_assign_latencies(pm, opt.num_stages)
             passes.ttgpuir.add_schedule_loops(pm)
-            nvidia.passes.hopperws.add_hopper_warpspec(pm, opt.num_stages, dump_enabled)
-            # passes.ttgpuir.add_pipeline(pm, opt.num_stages, dump_enabled)
+            passes.ttgpuir.add_pipeline(pm, opt.num_stages, dump_enabled)
         elif capability // 10 >= 10:
             passes.ttgpuir.add_fuse_nested_loops(pm)
             passes.common.add_canonicalizer(pm)

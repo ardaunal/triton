@@ -35,6 +35,7 @@ public:
     if (loops.empty())
       return;
 
+    OpBuilder builder(funcOp);
     auto moduleOp = funcOp->getParentOfType<ModuleOp>();
     unsigned numWarpGroups = 3;
     for (; numWarpGroups >= 2; numWarpGroups--) {
@@ -73,6 +74,11 @@ public:
           << moduleOp << "\n\n\n";
     }
     doTokenLowering(funcOp, numWarpGroups - 1);
+    // Clear num_stages to disable SWP.
+    funcOp->walk([&](scf::ForOp forOp) {
+      forOp->setAttr(mlir::triton::kNumStagesAttrName,
+                     builder.getI32IntegerAttr(0));
+    });
   }
 
   void runOnOperation() override {
