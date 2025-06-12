@@ -38,6 +38,7 @@ public:
     OpBuilder builder(funcOp);
     auto moduleOp = funcOp->getParentOfType<ModuleOp>();
     unsigned numWarpGroups = 3;
+    bool success = false;
     for (; numWarpGroups >= 2; numWarpGroups--) {
       // Partition key ops into multiple async tasks.
       doTaskPartition(funcOp, numWarpGroups);
@@ -57,15 +58,19 @@ public:
       }
 
       // Partition ops into parallel sub ops.
-      if (doDataPartition(funcOp, numWarpGroups - 1))
+      if (doDataPartition(funcOp, numWarpGroups - 1)) {
+        if (dumpIntermediateSteps) {
+          llvm::dbgs()
+              << "// -----// WarpSpec internal IR Dump After: doDataPartition\n"
+              << moduleOp << "\n\n\n";
+        }
+        success = true;
         break;
-      if (dumpIntermediateSteps) {
-        llvm::dbgs()
-            << "// -----// WarpSpec internal IR Dump After: doDataPartition\n"
-            << moduleOp << "\n\n\n";
       }
       // Clear async_task.
     }
+    if (!success)
+      signalPassFailure();
 
     doCodePartition(funcOp, numStages);
     if (dumpIntermediateSteps) {
